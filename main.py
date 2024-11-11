@@ -3,6 +3,7 @@ from hmac import new
 import psycopg2
 import os
 from fastapi import FastAPI, Depends
+from sqlalchemy.sql import text
 from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine, and_, func
 from sqlalchemy.orm import sessionmaker, Session
@@ -10,7 +11,7 @@ from model import (User, Skill, Score, ActionJournal, ActionSkill, ActionCharact
                    SkillResults, CharacteristicResults)
 from schemas import (SSkill, SSkillAdd, SAction, SActionJournal, SActionAddWithLinkSkillsAndCharact,
                      SCharactiristic, SSkillWAction, SCharacteristicWAction, SActionEditWithLinkSkillsAndCharact,
-                     SShortAction)
+                     SShortAction, SAllSkillCharScores)
 from os import environ
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -20,7 +21,6 @@ from datetime import date, timedelta
 from routers.today import router as today_router
 
 dotenv_path = 'env.env'
-print(dotenv_path)
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
 
@@ -45,7 +45,14 @@ app = FastAPI()
 
 
 # app.include_router(today_router)
+@app.get('/hello')
+def hello_world1():
+    return "<h1>Hello, FastAPI!<h1>"
 
+@app.get('/db')
+def hello_world(db: Session = Depends(get_db)):
+    db_version = db.execute("SELECT version();").fetchone()
+    return f"Hello, World! Database version: {db_version}"
 
 @app.get("/api/skills", description="",
          summary="Только скилы", tags=["Посмотреть"])
@@ -419,7 +426,7 @@ def get_results_skill_recalc_all(db: Session = Depends(get_db)):
         and_(Skill.user_id == 1, Skill.is_active)).all()
     for one_skill in all_skills:
         calc_one_skill_all_date(one_skill[0], one_skill[1], one_skill[2])
-    return db.query(SkillResults).filter(SkillResults.dt == date.today()).all()
+    return db.query(SkillResults).all()
 
 
 def set_penalty_character(db, curr_date, curr_score, character_id, failed_days):
@@ -526,6 +533,32 @@ def get_results_charact_recalc_all(db: Session = Depends(get_db)):
         calc_one_charact_all_date(one_charact[0], one_charact[1], one_charact[2])
     return db.query(CharacteristicResults).filter(CharacteristicResults.dt == date.today()).all()
 
+@app.get("/api/results/all", description="Получить все скоры на сегодня",
+          summary="Получить все скоры на сегодня", tags=["Посмотреть"])
+def get_results(db: Session = Depends(get_db)) -> list[SAllSkillCharScores]:
+    query = text('''
+select s.id as id, score_change as score, s.skill as name, 'skill' as type 
+from skill s 
+join skill_results sk on s.id = sk.skill_id
+where is_active and user_id =1 
+and dt = (select max(dt) from skill_results where skill_id = sk.skill_id)
+union all
+select s.id as id, score_change as score, s.characteristic as name, 'characteristic' as type 
+from characteristic s 
+join characteristic_results sk on s.id = sk.characteristic_id
+where is_active and user_id =1 
+and dt = (select max(dt) from characteristic_results where characteristic_id = sk.characteristic_id)
+;
+    ''')
+    score_list = []
+    for one in db.execute(query).fetchall():
+        act = SAllSkillCharScores(id=one[0], score=one[1], name=one[2], types=one[3])
+        score_list.append(act)
+    return score_list
+
 # TODO 4. mvp: авторизация
 # TODO 5. вьюха
 # TODO 6. Роутер и репозиторий: https://habr.com/ru/companies/selectel/articles/796669/
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

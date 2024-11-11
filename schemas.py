@@ -55,3 +55,9 @@ class SCharacteristicWAction(BaseModel):
     id: int
     characteristic: str = Field(max_length=100)
     actions: List[SAction]
+
+class SAllSkillCharScores(BaseModel):
+    id: int
+    score: int
+    name: str = Field(max_length=100)
+    types: str = Field(max_length=100)

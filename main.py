@@ -13,7 +13,7 @@ from schemas import (SSkill, SSkillAdd, SAction, SActionJournal, SActionAddWithL
                      SCharactiristic, SSkillWAction, SCharacteristicWAction, SActionEditWithLinkSkillsAndCharact,
                      SShortAction, SAllSkillCharScores)
 from os import environ
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from dotenv import load_dotenv
 # import datetime
 from datetime import date, timedelta
@@ -43,6 +43,9 @@ def get_db():
 
 app = FastAPI()
 
+@app.get("/")
+async def main():
+    return FileResponse("public/index.html")
 
 # app.include_router(today_router)
 @app.get('/hello')

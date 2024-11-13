@@ -1,4 +1,4 @@
-name: "DockerTest4"
+name: "DisciplineKos"
 on:
   push:
     branches: ["ll"]

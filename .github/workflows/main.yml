@@ -1,0 +1,24 @@
+name: "DockerTest4"
+on:
+  push:
+    branches: ["ll"]
+  pull_request:
+    branches: ["ll"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy using ssh # Название шага: Деплой с использованием SSH
+        uses: appleboy/ssh-action@master # Использование готового действия для SSH-подключения
+        with:
+          host: ${{secrets.SSH_HOST}}
+          username: ${{secrets.SSH_USER}}
+          key: ${{secrets.PRIVATE_KEY}}
+          port: 22 # Порт для SSH-подключения (по умолчанию 22)
+          script: |
+            cd /home/DisciplineKosAPI/ # Переход в директорию с проектом на сервере
+            git pull origin master # Вытягивание последних изменений из ветки main
+            git status # Проверка состояния git-репозитория
+            docker compose stop
+            docker compose up --no-recreate -d

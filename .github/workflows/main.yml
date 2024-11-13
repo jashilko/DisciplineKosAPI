@@ -1,9 +1,9 @@
 name: "DisciplineKos"
 on:
   push:
-    branches: ["ll"]
+    branches: ["master"]
   pull_request:
-    branches: ["ll"]
+    branches: ["master"]
 
 jobs:
   deploy:
@@ -20,5 +20,5 @@ jobs:
             cd /home/DisciplineKosAPI/ # Переход в директорию с проектом на сервере
             git pull origin master # Вытягивание последних изменений из ветки main
             git status # Проверка состояния git-репозитория
-            docker compose stop
-            docker compose up --no-recreate -d
+            # docker compose stop
+            # docker compose up --no-recreate -d

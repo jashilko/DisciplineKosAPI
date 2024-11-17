@@ -9,7 +9,7 @@ services:
     depends_on:
       - db-dis
 
-  db:
+  db-dis:
     image: postgres:15
     container_name: 'db-dis'
     ports:

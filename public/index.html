@@ -2,15 +2,25 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>METANIT.COM</title>
+    <title>Discipline-Kos-View</title>
 <style>
 td {padding:5px;}
 button{margin: 5px;}
 </style>
 </head>
 <body>
-    <h2>Список пользователей</h2>
-    <div>
+<h2>Список действий</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Ид</th>
+        <th>Действие</th>
+    </tr>
+    </thead>
+    <tbody id="actlist">
+    </tbody>
+</table>
+<div style="display: none">
         <input type="hidden" id="userId" />
         <p>
             Имя:<br/>
@@ -25,9 +35,15 @@ button{margin: 5px;}
             <button id="resetBtn">Сбросить</button>
         </p>
     </div>
-    <table>
-        <thead><tr><th>Имя</th><th>Возраст</th><th></th></tr></thead>
-        <tbody>
+    <table id="myTable">
+        <thead>
+        <tr>
+            <th>Имя</th>
+            <th>Скор</th>
+            <th>Тип</th>
+        </tr>
+        </thead>
+        <tbody id="scorlist">
         </tbody>
     </table>
 
@@ -35,7 +51,7 @@ button{margin: 5px;}
     // Получение всех пользователей
         async function getUsers() {
             // отправляет запрос и получаем ответ
-            const response = await fetch("/api/users", {
+            const response = await fetch("/api/results/all", {
                 method: "GET",
                 headers: { "Accept": "application/json" }
             });
@@ -43,9 +59,29 @@ button{margin: 5px;}
             if (response.ok === true) {
                 // получаем данные
                 const users = await response.json();
-                const rows = document.querySelector("tbody");
+                let table = document.getElementById("myTable")
+                let newTBody = document.createElement('tbody');
+                newTBody.setAttribute("id", "scorlist");
+                table.replaceChild(newTBody, document.getElementById("scorlist"));
+                const rows = document.getElementById("scorlist");
                 // добавляем полученные элементы в таблицу
                 users.forEach(user => rows.append(row(user)));
+            }
+        }
+
+        async function getAction() {
+            // отправляет запрос и получаем ответ
+            const response = await fetch("/api/actions", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            // если запрос прошел нормально
+            if (response.ok === true) {
+                // получаем данные
+                const actions = await response.json();
+                const rows = document.getElementById("actlist");
+                // добавляем полученные элементы в таблицу
+                actions.forEach(user => rows.append(rowa(user)));
             }
         }
         // Получение одного пользователя
@@ -121,6 +157,31 @@ button{margin: 5px;}
                 console.log(error.message);
             }
         }
+        // Добавление действия
+        async function addJournal(id) {
+            const response1 = await fetch("/api/journal/add", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action_id: id
+                })
+            });
+            if (response1.ok === true) {
+                const response2 = await fetch("/api/results/skill/recalc/all", {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                const response3 = await fetch("/api/results/characteristic/recalc/all", {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                getUsers();
+            }
+            else {
+                const error = await response1.json();
+                console.log(error.message);
+            }
+        }
 
         // сброс данных формы после отправки
         function reset() {
@@ -138,22 +199,57 @@ button{margin: 5px;}
             nameTd.append(user.name);
             tr.append(nameTd);
 
-            const ageTd = document.createElement("td");
-            ageTd.append(user.age);
-            tr.append(ageTd);
+            const scoreTd = document.createElement("td");
+            scoreTd.append(user.score);
+            tr.append(scoreTd);
+
+            const typeTd = document.createElement("td");
+            typeTd.append(user.types);
+            tr.append(typeTd);
+
+
+            const linksTd = document.createElement("td");
+
+            //const editLink = document.createElement("button");
+            //editLink.append("Изменить");
+            //editLink.addEventListener("click", async() => await getUser(user.id));
+            //linksTd.append(editLink);
+
+            //const removeLink = document.createElement("button");
+            //removeLink.append("Удалить");
+            //removeLink.addEventListener("click", async () => await deleteUser(user.id));
+
+            //linksTd.append(removeLink);
+            //tr.appendChild(linksTd);
+
+            return tr;
+        }
+        // создание строки для таблицы
+        function rowa(actions) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", actions.id);
+
+            const nameId = document.createElement("td");
+            nameId.append(actions.id);
+            tr.append(nameId);
+
+            const actionTd = document.createElement("td");
+            actionTd.append(actions.action);
+            tr.append(actionTd);
 
             const linksTd = document.createElement("td");
 
             const editLink = document.createElement("button");
-            editLink.append("Изменить");
-            editLink.addEventListener("click", async() => await getUser(user.id));
+            editLink.append("Сделано");
+            editLink.addEventListener("click", async() => await addJournal(actions.id));
             linksTd.append(editLink);
 
-            const removeLink = document.createElement("button");
-            removeLink.append("Удалить");
-            removeLink.addEventListener("click", async () => await deleteUser(user.id));
+            //const removeLink = document.createElement("button");
+            //removeLink.append("Удалить");
+            //removeLink.addEventListener("click", async () => await deleteUser(user.id));
 
-            linksTd.append(removeLink);
+            //linksTd.append(removeLink);
             tr.appendChild(linksTd);
 
             return tr;
@@ -176,6 +272,7 @@ button{margin: 5px;}
 
         // загрузка пользователей
         getUsers();
+        getAction();
     </script>
 </body>
 </html>

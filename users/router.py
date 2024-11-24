@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException, status
 from users.auth import get_password_hash
-from users.schemas import SUserRegister
+from users.schemas import SUserRegister, SUserAuth
 from users.models import User
 from fastapi import Depends
 from sqlalchemy.orm import sessionmaker, Session
 from setting import get_db_url
 from sqlalchemy import create_engine
+from users.auth import authenticate_user, create_access_token
+from fastapi.responses import Response
 
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
@@ -39,3 +41,18 @@ def register_user(user_data: SUserRegister, db: Session = Depends(get_db)) -> di
     db.commit()
     db.refresh(new_user)
     return {'message': 'Вы успешно зарегистрированы!'}
+
+@router.post("/login/")
+async def auth_user(response: Response, user_data: SUserAuth, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == user_data.email).first()
+    if user:
+        check = authenticate_user(password=user_data.password, hash_pass=user.password)
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail='Неверная почта или пароль')
+    if check is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Неверная почта или пароль')
+    access_token = create_access_token({"sub": str(user.id)})
+    response.set_cookie(key="users_access_token", value=access_token, httponly=True)
+    return {'access_token': access_token, 'refresh_token': None}

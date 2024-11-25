@@ -8,6 +8,7 @@ from setting import get_db_url
 from sqlalchemy import create_engine
 from users.auth import authenticate_user, create_access_token
 from fastapi.responses import Response
+from users.dependencies import get_current_user
 
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
@@ -15,14 +16,21 @@ router = APIRouter(prefix='/auth', tags=['Auth'])
 engine = create_engine(get_db_url())
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
 
-
-
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+@router.get("/me/")
+def get_me(user_data: User = Depends(get_current_user)):
+    return user_data
+
+@router.post("/logout/")
+def logout_user(response: Response):
+    response.delete_cookie(key="users_access_token")
+    return {'message': 'Пользователь успешно вышел из системы'}
 
 @router.post("/register/")
 def register_user(user_data: SUserRegister, db: Session = Depends(get_db)) -> dict:

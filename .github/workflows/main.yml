@@ -20,5 +20,5 @@ jobs:
             cd /home/DisciplineKosAPI/ # Переход в директорию с проектом на сервере
             git pull origin master # Вытягивание последних изменений из ветки main
             git status # Проверка состояния git-репозитория
-            docker compose stop #
+            docker compose stop 
             docker compose up --no-recreate -d

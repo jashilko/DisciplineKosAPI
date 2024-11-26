@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from dotenv import load_dotenv
 # import datetime
 from datetime import date, timedelta
+from users.router import router as router_users
 
 from routers.today import router as today_router
 
@@ -33,6 +34,7 @@ engine = create_engine('postgresql+psycopg2://{}:{}@{}/{}'.
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
 
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -41,7 +43,9 @@ def get_db():
         db.close()
 
 
+
 app = FastAPI()
+app.include_router(router_users)
 
 @app.get("/")
 async def main():
@@ -560,7 +564,6 @@ and dt = (select max(dt) from characteristic_results where characteristic_id = s
     return score_list
 
 # TODO 4. mvp: авторизация
-# TODO 5. вьюха
 # TODO 6. Роутер и репозиторий: https://habr.com/ru/companies/selectel/articles/796669/
 
 if __name__ == '__main__':
